@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">Authorization</string>
+    <string name="client_id">mK5bdRulxyLEtti5kdqZR2IqBKU4KSJtsb6J8F7d</string>
+    <string name="client_secret">L7dlM0ccjT1Z05br4pTrkxF1ZY1nMmaBuWc2H34jyGgSJSPOYHOVCgAnyLue7i34O75BKHjb1ozmZrGyybq24OWB8LuN393XbR2M5Lkcpl1E90nQ0tb1AUTMAKMBnoYa</string>
+    <string name="title_text">GitHub OAuth Demo</string>
+    <string name="callback_url">http://bash.im/</string>
+
+    <string name="login_hint">login</string>
+    <string name="password_hint">password</string>
+    <string name="login_button">login</string>
+
+    <string name="auth_url">http://10.55.122.130/o/authorize/?client_id=%1$s%2$sredirect_url=%3$s%4$scope=read&amp;response_type=code</string>
+    <string name="token_url">http://10.55.122.130/o/token/</string>
+
+    <string name="success">You have successfully authorized. Your token will expire on </string>
+    <string name="fail">Either your ID or password is invalid. Please check that Caps Lock was not pressed</string>
+</resources>
