@@ -99,7 +99,7 @@ public class MainActivity extends AppCompatActivity {
                         .replace(R.id.container, fragment).commit();
             }
             else {
-                Intent intent = new Intent(MainActivity.this, ActivityAuthorized.class);
+                Intent intent = new Intent(MainActivity.this, SplashActivity.class);
                 startActivityForResult(intent, REQUEST_CODE);
             }
         }
@@ -111,5 +111,16 @@ public class MainActivity extends AppCompatActivity {
             getSupportFragmentManager().beginTransaction()
                     .replace(R.id.container, fragment).commit();
         }
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        // TODO Auto-generated method stub
+        super.onRestoreInstanceState(savedInstanceState);
     }
 }
