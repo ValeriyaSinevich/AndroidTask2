@@ -19,9 +19,11 @@ import android.webkit.WebViewClient;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
+import java.net.InetAddress;
 import java.net.URI;
 import java.net.URL;
 import java.util.Date;
+import java.util.concurrent.ExecutionException;
 
 
 import com.example.valeriyasin.authorization.AuthorizationActivity;
@@ -761,13 +763,13 @@ class Base64 {
  * Created by valeriyasin on 11/15/16.
  */
 public class AuthorizationActivity extends AppCompatActivity implements AuthorizationListener  {
-    public static final String ACCESS_TOKEN = "access_token";
-    public static final String EXPIRATION_DATE = "expiration_date";
-    public static final String AUTH_ERROR = "error";
-
+//    public static final String ACCESS_TOKEN = "access_token";
+//    public static final String EXPIRATION_DATE = "expiration_date";
+//    public static final String AUTH_ERROR = "error";
+//
     private static final String EXTRA_CLIENT_ID = "client_id";
     private static final String EXTRA_CLIENT_SECRET = "client_secret";
-
+//
     private String clientId;
     private String clientSecret;
 
@@ -776,27 +778,16 @@ public class AuthorizationActivity extends AppCompatActivity implements Authoriz
     private String redirectUrl;
 
     SharedPreferences sPref;
-    final String SAVED_TOKEN = "saved_token";
+//    final String SAVED_TOKEN = "saved_token";
 
     private WebView webView;
 
-    public class TokenObject {
-        private String token;
-        private String expirationDate;
+    Boolean getTokenStarted = false;
 
-        TokenObject(String token, String expirationDate) {
-            this.expirationDate = expirationDate;
-            this.token = token;
-        }
+    Utils utils;
 
-        public String getExpirationDate() {
-            return expirationDate;
-        }
+    String GET_TOCKEN_STARTED = "GET_TOCKEN_STARTED";
 
-        public String getToken() {
-            return token;
-        }
-    }
 
     public static Intent createAuthActivityIntent(Context context, String clientId, String secret) {
         Intent intent = new Intent(context, AuthorizationActivity.class);
@@ -807,9 +798,11 @@ public class AuthorizationActivity extends AppCompatActivity implements Authoriz
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(null);
+        super.onCreate(savedInstanceState);
         setContentView(R.layout.auth_acitivity);
         webView = (WebView) findViewById(R.id.web_auth_view);
+
+        utils = new Utils(this);
 
         clientId = getIntent().getStringExtra(EXTRA_CLIENT_ID);
         clientSecret = getIntent().getStringExtra(EXTRA_CLIENT_SECRET);
@@ -818,37 +811,58 @@ public class AuthorizationActivity extends AppCompatActivity implements Authoriz
         System.out.println(authUrlTemplate);
         tokenUrlTemplate = getString(R.string.token_url);
         redirectUrl = getString(R.string.callback_url);
+
+        if (savedInstanceState == null) {//        super.onResume();
+            onAuthStarted();
+            String url = String.format(authUrlTemplate, clientId, "&", redirectUrl, "&");
+            URI uri = URI.create(url);
+            System.out.println("URL: " + url);
+            webView.setWebViewClient(new OAuthWebClient(this));
+            webView.getSettings().setJavaScriptEnabled(true);
+            webView.loadUrl(uri.toString());
+        }
+        else {
+            webView.restoreState(savedInstanceState);
+        }
+
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        onAuthStarted();
-        String url = String.format(authUrlTemplate, clientId, "&", redirectUrl, "&");
-        URI uri = URI.create(url);
-        webView.setWebViewClient(new OAuthWebClient(this));
-        webView.loadUrl(uri.toString());
+        System.out.println("ge\n");
+
     }
 
-    void saveToken(TokenObject tokenObject) {
+    public void saveToken(TokenObject tokenObject) {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         SharedPreferences.Editor editor = prefs.edit();
-        editor.putString(SAVED_TOKEN, tokenObject.getToken());
-        editor.putString(EXPIRATION_DATE, tokenObject.getExpirationDate());
+        editor.putString(utils.SAVED_TOKEN, tokenObject.getToken());
+        editor.putString(utils.SAVED_EXPIRATION_DATE, tokenObject.getExpirationDate());
         editor.commit();
     }
 
     @Override
     public void onAuthStarted() {
+        InternetConnectionChecker internetConnectionChecker = new InternetConnectionChecker(this);
+        try {
+            Boolean connectionOk = internetConnectionChecker.execute("").get();
+            if (!connectionOk) {
+                finish();
+            }
 
+        } catch (ExecutionException | InterruptedException ex) {
+            ex.printStackTrace();
+        }
+//        System.out.println("oauth started\n");
     }
 
     @Override
     public void onComplete(TokenObject tokenObject) {
         Intent intent = new Intent();
-        intent.putExtra(ACCESS_TOKEN, tokenObject.getToken());
-        intent.putExtra(EXPIRATION_DATE, tokenObject.getExpirationDate());
-        setResult(Activity.RESULT_OK, intent);
+        intent.putExtra(utils.ACCESS_TOKEN, tokenObject.getToken());
+        intent.putExtra(utils.ACCESS_EXPIRATION_DATE, tokenObject.getExpirationDate());
+        setResult(utils.RESULT_OK, intent);
         saveToken(tokenObject);
         finish();
     }
@@ -856,8 +870,8 @@ public class AuthorizationActivity extends AppCompatActivity implements Authoriz
     @Override
     public void onError(String error) {
         Intent intent = new Intent();
-        intent.putExtra(AUTH_ERROR, error);
-        setResult(Activity.RESULT_CANCELED, intent);
+        intent.putExtra(utils.AUTH_ERROR, error);
+        setResult(utils.RESULT_CANCELED, intent);
         finish();
     }
 
@@ -880,6 +894,7 @@ public class AuthorizationActivity extends AppCompatActivity implements Authoriz
             if (url.startsWith(view.getResources().getString(R.string.callback_url))) {
                 String[] urls = url.split("=");
                 new AccessTokenGetter(listener).execute(urls[1]);
+                getTokenStarted = true;
                 return true;
             }
             return false;
@@ -890,6 +905,46 @@ public class AuthorizationActivity extends AppCompatActivity implements Authoriz
             listener.onError(error.toString());
         }
     }
+
+    private class InternetConnectionChecker extends  AsyncTask<String, Void, Boolean> {
+        private AuthorizationListener listener;
+
+        InternetConnectionChecker(AuthorizationListener listener) {
+            this.listener = listener;
+        }
+
+        public boolean isInternetAvailable() {
+            try {
+                InetAddress ipAddr = InetAddress.getByName("google.com"); //You can replace it with your name
+                return !ipAddr.equals("");
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                return false;
+            }
+
+        }
+
+        @Override
+        protected Boolean doInBackground(String... params) {
+            boolean connectionOk = isInternetAvailable();
+            if (!connectionOk) {
+                listener.onError(String.valueOf(utils.NO_INTERNET_CONNECTION));
+            }
+            return connectionOk;
+        }
+
+        @Override
+        protected void onPreExecute () {
+            super.onPreExecute();
+        }
+
+        @Override
+        protected void onPostExecute (Boolean connectionOk){
+            super.onPreExecute();
+        }
+    }
+
 
     private class AccessTokenGetter extends AsyncTask<String, Void, TokenObject> {
         private AuthorizationListener listener;
@@ -905,7 +960,7 @@ public class AuthorizationActivity extends AppCompatActivity implements Authoriz
                 System.out.println(params[0]);
                 System.out.println("------------------------");
                 System.out.println(redirectUrl);
-                String baseURL = "http://192.168.88.106";
+                String baseURL = "http://192.168.1.78";
                 BasicHttpClient httpClient = new BasicHttpClient(baseURL);
                 String nBaseurl = "/o/token/";
                 String appCredentials = clientId + ":" + clientSecret;
@@ -925,8 +980,17 @@ public class AuthorizationActivity extends AppCompatActivity implements Authoriz
                 if (status != STATUS_OK) {
                     return new TokenObject("Error with status " + status, "default_date");
                 } else {
+
                     String response = response1.getBodyAsString();
-                    return new TokenObject(getAccessToken(response), getAccessTokenDateExpiration(response));
+                    try {
+                        JSONObject jsonResponse = new JSONObject(response);
+//                        testToken(jsonResponse.getString("access_token"));
+                        return new TokenObject(jsonResponse.getString("access_token"),
+                                 getAccessTokenDateExpiration(jsonResponse.getString("expires_in")));
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -935,27 +999,39 @@ public class AuthorizationActivity extends AppCompatActivity implements Authoriz
         }
 
         @Override
+        protected  void onPreExecute() {
+            super.onPreExecute();
+        }
+
+        @Override
         protected void onPostExecute(TokenObject tokenObject) {
-            if (tokenObject.getToken().contains("Error")) {
-                listener.onError(tokenObject.getToken());
-            } else {
-                listener.onComplete(tokenObject);
+            if (tokenObject != null) {
+                if (tokenObject.getToken().contains("Error")) {
+                    listener.onError(tokenObject.getToken());
+                } else {
+                    listener.onComplete(tokenObject);
+                }
             }
+
+            super.onPreExecute();
         }
     }
 
-    private String getAccessTokenDateExpiration(String response) {
-        String[] params = response.split("&");
-        int secs = Integer.parseInt(params[0].split("=")[2]);
+    private String getAccessTokenDateExpiration(String expires_in) {
+        int secs = Integer.parseInt(expires_in);
         Date date = new Date();
-        date.setTime(date.getTime() + secs);
-//        System.out.println(params);
+//        date.setTime(date.getTime() + secs * 1000);
         return date.toString();
     }
 
-    private String getAccessToken(String response) {
-        String[] params = response.split("&");
-        System.out.println(params);
-        return params[0].split("=")[1];
+    @Override
+    protected void onSaveInstanceState(Bundle savedInstanceState) {
+        savedInstanceState.putBoolean(GET_TOCKEN_STARTED, getTokenStarted);
+        webView.saveState(savedInstanceState);
+//        savedInstanceState.putInt(AUTHORIZED_ACTIVITY_STARTED, authorizedActivityStarted);
+
+        super.onSaveInstanceState(savedInstanceState);
     }
+
+
 }

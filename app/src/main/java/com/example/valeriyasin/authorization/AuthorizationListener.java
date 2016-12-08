@@ -6,7 +6,7 @@ package com.example.valeriyasin.authorization;
 public interface AuthorizationListener {
     void onAuthStarted();
 
-    void onComplete(AuthorizationActivity.TokenObject tokenObject);
+    void onComplete(TokenObject tokenObject);
 
     void onError(String error);
 }

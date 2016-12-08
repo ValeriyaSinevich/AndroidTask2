@@ -20,6 +20,8 @@
             </intent-filter>
         </activity>
         <activity android:name="com.example.valeriyasin.authorization.AuthorizationActivity" />
+        <activity android:name="com.example.valeriyasin.authorization.ActivityAuthorized" />
+        <activity android:name="com.example.valeriyasin.authorization.SplashActivity" />
     </application>
 
 </manifest>

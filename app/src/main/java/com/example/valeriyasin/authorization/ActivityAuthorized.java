@@ -16,36 +16,25 @@ import android.widget.TextView;
  */
 public class ActivityAuthorized extends AppCompatActivity {
 
+    Utils utils;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.autorized_activity);
-        String s = getIntent().getStringExtra("RESULT_STRING");
-        int status = getIntent().getIntExtra("RESULT_STATUS", 0);
+
+        utils = new Utils(this);
+        String s = getIntent().getStringExtra(utils.RESULT_STRING);
+        System.out.println(s);
+        int status = getIntent().getIntExtra(utils.RESULT_STATUS, 0);
         TextView tv = (TextView) findViewById(R.id.textView);
         tv.setText(s);
+        tv.setVisibility(View.VISIBLE);
 
-        if (status == Activity.RESULT_OK) {
+        if (status == utils.RESULT_OK) {
             Button loginButton = (Button) findViewById(R.id.login_again_button);
-            loginButton.setEnabled(true);
-
-            loginButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    Fragment fragment = new LoginFragment();
-                    Bundle bundle = new Bundle();
-                    bundle.putBoolean("Proceed", true);
-                    fragment.setArguments(bundle);
-                    getSupportFragmentManager().beginTransaction()
-                            .replace(R.id.container, fragment).commit();
-                }
-            });
-        }
-
-        if (status == MainActivity.NO_INTERNET_CONNECTION) {
-            Button loginButton = (Button) findViewById(R.id.login_again_button);
-            loginButton.setText("Back");
-            loginButton.setEnabled(true);
+            loginButton.setEnabled(false);
+            loginButton.setVisibility(View.INVISIBLE);
 
             loginButton.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -53,6 +42,34 @@ public class ActivityAuthorized extends AppCompatActivity {
                     finish();
                 }
             });
+
+        }
+        else if (status == utils.NO_INTERNET_CONNECTION || status == utils.RESULT_CANCELED) {
+            Button loginButton = (Button) findViewById(R.id.login_again_button);
+            loginButton.setText("Back");
+            loginButton.setEnabled(true);
+            loginButton.setVisibility(View.VISIBLE);
+            tv.setText(s);
+            tv.setVisibility(View.VISIBLE);
+
+            loginButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    finish();
+                }
+            });
+//            loginButton.setOnClickListener(new View.OnClickListener() {
+//                @Override
+//                public void onClick(View v) {
+//                    Fragment fragment = new LoginFragment();
+//                    Bundle bundle = new Bundle();
+//                    bundle.putBoolean("Proceed", true);
+//                    fragment.setArguments(bundle);
+//                    getSupportFragmentManager().beginTransaction()
+//                            .replace(R.id.container, fragment).commit();
+//                }
+//            });
+
         }
     }
 }

@@ -20,6 +20,8 @@ import java.net.InetAddress;
 public class LoginFragment extends Fragment {
     private static final int REQUEST_CODE = 100;
 
+    Utils utils;
+
 
     private static final String USERNAME = "USER_NAME";
 
@@ -34,7 +36,9 @@ public class LoginFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        loginButtonPressed = getArguments().getBoolean("Proceed");
+
+        utils = new Utils(this.getContext());
+//        loginButtonPressed = getArguments().getBoolean("Proceed");
 
         View v = inflater.inflate(R.layout.login_fragment, container, false);
 
@@ -43,21 +47,9 @@ public class LoginFragment extends Fragment {
         LoginClickListener loginClickListener = new LoginClickListener();
         login.setOnClickListener(loginClickListener);
 
-        login.performClick();
+//        login.performClick();
 
         return v;
-    }
-
-
-    public boolean isInternetAvailable() {
-        try {
-            InetAddress ipAddr = InetAddress.getByName("google.com"); //You can replace it with your name
-            return !ipAddr.equals("");
-
-        } catch (Exception e) {
-            return false;
-        }
-
     }
 
 
@@ -65,28 +57,36 @@ public class LoginFragment extends Fragment {
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REQUEST_CODE) {
-            if (resultCode == Activity.RESULT_OK) {
-                String token = data.getStringExtra(AuthorizationActivity.ACCESS_TOKEN);
-                String expDate = data.getStringExtra(AuthorizationActivity.EXPIRATION_DATE);
+        if (requestCode == utils.REQUEST_CODE_GET) {
+            if (resultCode == utils.RESULT_OK) {
+                String token = data.getStringExtra(utils.ACCESS_TOKEN);
+                String expDate = data.getStringExtra(utils.ACCESS_EXPIRATION_DATE);
                 StringBuilder stringBuilder = new StringBuilder();
                 stringBuilder.append("Your token ").append(token).append("\n").append("Expiration date ").append(expDate);
 //                Toast.makeText(getContext(), stringBuilder.toString(), Toast.LENGTH_SHORT).show();
                 Intent intent = new Intent(getActivity(), ActivityAuthorized.class);
-                intent.putExtra(RESULT_STRING, stringBuilder.toString());
-                intent.putExtra(RESULT_STATUS, Activity.RESULT_OK);
+                intent.putExtra(utils.RESULT_STRING, stringBuilder.toString());
+                intent.putExtra(utils.RESULT_STATUS,utils.RESULT_OK);
                 startActivity(intent);
 //                accessToken = token;
             }
-            if (resultCode == Activity.RESULT_CANCELED) {
-                if (data != null && data.hasExtra(AuthorizationActivity.AUTH_ERROR)) {
-                    String error = data.getStringExtra(AuthorizationActivity.AUTH_ERROR);
+            if (resultCode == utils.RESULT_CANCELED) {
+                if (data != null && data.hasExtra(utils.AUTH_ERROR)) {
+                    String error = data.getStringExtra(utils.AUTH_ERROR);
+                    if (error.equals(String.valueOf(utils.NO_INTERNET_CONNECTION))) {
+                        Intent intent = new Intent(getActivity(), ActivityAuthorized.class);
+                        intent.putExtra(utils.RESULT_STRING, "Internet connection was lost :(");
+                        intent.putExtra(utils.RESULT_STATUS, utils.NO_INTERNET_CONNECTION);
+                        startActivity(intent);
+                    }
+                    else {
 //                    Toast.makeText(getContext(), error, Toast.LENGTH_SHORT).show();
-                    StringBuilder stringBuilder = new StringBuilder();
-                    stringBuilder.append("Ooops... Something is wrong with your token. Please try again.");
-                    Intent intent = new Intent(getActivity(), ActivityAuthorized.class);
-                    intent.putExtra(RESULT_STATUS, Activity.RESULT_CANCELED);
-                    startActivity(intent);
+                        StringBuilder stringBuilder = new StringBuilder();
+                        stringBuilder.append("Ooops... Something is wrong with your token. Please try again.");
+                        Intent intent = new Intent(getActivity(), ActivityAuthorized.class);
+                        intent.putExtra(LoginFragment.RESULT_STATUS, Activity.RESULT_CANCELED);
+                        startActivity(intent);
+                    }
                 }
             }
         }
@@ -94,17 +94,11 @@ public class LoginFragment extends Fragment {
 
     private class LoginClickListener implements View.OnClickListener {
         public void onClick(View v) {
-            if (!isInternetAvailable()) {
-                Intent intent = new Intent(getActivity(), ActivityAuthorized.class);
-                intent.putExtra(LoginFragment.RESULT_STRING, "No internet connection");
-                intent.putExtra(LoginFragment.RESULT_STATUS, MainActivity.NO_INTERNET_CONNECTION);
-                startActivity(intent);
-            }
             Resources resources = v.getResources();
             String clientId = resources.getString(R.string.client_id);
             String secret = resources.getString(R.string.client_secret);
             Intent intent = AuthorizationActivity.createAuthActivityIntent(v.getContext(), clientId, secret);
-            startActivityForResult(intent, REQUEST_CODE);
+            startActivityForResult(intent, utils.REQUEST_CODE_GET);
         }
     }
 

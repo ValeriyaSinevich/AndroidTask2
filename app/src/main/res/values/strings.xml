@@ -9,8 +9,19 @@
     <string name="password_hint">password</string>
     <string name="login_button">login</string>
 
-    <string name="auth_url">http://10.55.122.130/o/authorize/?client_id=%1$s%2$sredirect_url=%3$s%4$scope=read&amp;response_type=code</string>
-    <string name="token_url">http://10.55.122.130/o/token/</string>
+    <string name="auth_url">http://192.168.1.78/o/authorize/?client_id=%1$s%2$sredirect_url=%3$s%4$scope=read&amp;response_type=code</string>
+    <string name="token_url">http://192.168.1.78/o/token/</string>
+    <string name="baseURL">http://192.168.1.78</string>;
+
+    <string name="SAVED_TOKEN">saved_token</string>;
+    <string name="SAVED_EXPIRATION_DATE">saved_date</string>;
+    <string name="ACCESS_TOKEN">access_token</string>;
+    <string name="ACCESS_EXPIRATION_DATE">access_date</string>;
+    <string name="DEFAULT_TOKEN">default_token</string>;
+    <string name="DEFAULT_EXPIRATION_DATE">default_date</string>;
+    <string name="RESULT_STRING">result_string</string>;
+    <string name="RESULT_STATUS">result_status</string>;
+    <string name="AUTH_ERROR">auth_error</string>;
 
     <string name="success">You have successfully authorized. Your token will expire on </string>
     <string name="fail">Either your ID or password is invalid. Please check that Caps Lock was not pressed</string>
