@@ -25,12 +25,12 @@ import static com.example.valeriyasin.authorization.Utils.STATUS_OK;
  * Created by valeriyasin on 11/24/16.
  */
 
-public class SplashActivity extends AppCompatActivity {
+public class SplashActivity extends AppCompatActivity implements ActivityListener {
     String accessToken;
     Utils utils;
 
-    Boolean testTockenStarted = false;
-    String TEST_TOCKEN_STARTED = "TEST_TOCKEN_STARTED";
+//    Boolean testTockenStarted = false;
+//    String TEST_TOCKEN_STARTED = "TEST_TOCKEN_STARTED";
 
     public void saveToken(TokenObject tokenObject) {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
@@ -48,33 +48,27 @@ public class SplashActivity extends AppCompatActivity {
         utils = new Utils(this);
         accessToken = getIntent().getStringExtra(utils.ACCESS_TOKEN);
 
-        if (savedInstanceState == null || !testTockenStarted) {
+        AsyncTaskHandler.getInstance().turnOnAuthorizationActivityAlive(this);
+
+        if (!AsyncTaskHandler.getInstance().getAsyncTaskStarted().get()) {
             AccessTokenChecker tokenChecker = new AccessTokenChecker(accessToken, this);
             tokenChecker.execute();
-            testTockenStarted = true;
         }
+
+//        if (savedInstanceState == null || !testTockenStarted) {
+//
+//        }
     }
 
-//    @Override
-//    public void onCreate(Bundle savedInstanceState) {
-//        super.onCreate(null);
-//        setContentView(R.layout.auth_acitivity);
-////        clientId = getIntent().getStringExtra(EXTRA_CLIENT_ID);
-////        clientSecret = getIntent().getStringExtra(EXTRA_CLIENT_SECRET);
-////
-//////        authUrlTemplate = getString(R.string.auth_url);
-////        System.out.println(authUrlTemplate);
-//////        tokenUrlTemplate = getString(R.string.token_url);
-//////        redirectUrl = getString(R.string.callback_url);
-//    }
-//
-//    @Override
-//    public void onAuthStarted() {
-//
-//    }
-//
 
-    public void onComplete(Boolean result) {
+    @Override
+    public void onError(String error) {}
+
+
+
+    @Override
+    public void onComplete(TokenObject tokenObject) {
+        Boolean result = Boolean.parseBoolean(tokenObject.getToken());
         Intent intent = new Intent();
         if (result)
             setResult(Activity.RESULT_OK, intent);
@@ -114,7 +108,7 @@ public class SplashActivity extends AppCompatActivity {
 //
         @Override
         protected void onPostExecute(Boolean result) {
-            splashActivity.onComplete(result);
+            AsyncTaskHandler.getInstance().onComplete(new TokenObject(result.toString(), ""));
         }
 
         private boolean testToken(String accessToken) {
@@ -138,9 +132,6 @@ public class SplashActivity extends AppCompatActivity {
 
     @Override
     protected void onSaveInstanceState(Bundle savedInstanceState) {
-        savedInstanceState.putBoolean(TEST_TOCKEN_STARTED, testTockenStarted);
-//        savedInstanceState.putInt(AUTHORIZED_ACTIVITY_STARTED, authorizedActivityStarted);
-
         super.onSaveInstanceState(savedInstanceState);
     }
 

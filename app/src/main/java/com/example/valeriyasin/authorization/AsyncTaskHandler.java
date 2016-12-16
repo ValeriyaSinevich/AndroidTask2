@@ -18,7 +18,7 @@ public class AsyncTaskHandler {
 
     private static AtomicBoolean asyncTaskStarted  = new AtomicBoolean(false);
 
-    private static AuthorizationActivity authorizationActivity;
+    private static ActivityListener authorizationActivity;
 
     private static Object authorizationActivityAlive  = new Object();
 
@@ -70,7 +70,7 @@ public class AsyncTaskHandler {
     }
 
 
-    public void turnOnAuthorizationActivityAlive(AuthorizationActivity authorizationActivity) {
+    public void turnOnAuthorizationActivityAlive(ActivityListener authorizationActivity) {
         this.authorizationActivity = authorizationActivity;
         synchronized (authorizationActivityAlive) {
             authorizationActivityAlive.notifyAll();

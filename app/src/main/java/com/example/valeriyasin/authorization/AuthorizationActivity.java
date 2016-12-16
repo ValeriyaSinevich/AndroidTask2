@@ -764,7 +764,7 @@ class Base64 {
 /**
  * Created by valeriyasin on 11/15/16.
  */
-public class AuthorizationActivity extends AppCompatActivity implements AuthorizationListener  {
+public class AuthorizationActivity extends AppCompatActivity implements ActivityListener  {
 //    public static final String ACCESS_TOKEN = "access_token";
 //    public static final String EXPIRATION_DATE = "expiration_date";
 //    public static final String AUTH_ERROR = "error";
@@ -864,7 +864,6 @@ public class AuthorizationActivity extends AppCompatActivity implements Authoriz
         editor.commit();
     }
 
-    @Override
     public void onAuthStarted() {
         InternetConnectionChecker internetConnectionChecker = new InternetConnectionChecker(AsyncTaskHandler.getInstance());
         try {
