@@ -51,6 +51,7 @@ public class SplashActivity extends AppCompatActivity implements ActivityListene
         AsyncTaskHandler.getInstance().turnOnAuthorizationActivityAlive(this);
 
         if (!AsyncTaskHandler.getInstance().getAsyncTaskStarted().get()) {
+            AsyncTaskHandler.getInstance().turnOnAsyncTaskStarted();
             AccessTokenChecker tokenChecker = new AccessTokenChecker(accessToken, this);
             tokenChecker.execute();
         }
