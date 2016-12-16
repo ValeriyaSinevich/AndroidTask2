@@ -118,7 +118,7 @@ public class SplashActivity extends AppCompatActivity {
         }
 
         private boolean testToken(String accessToken) {
-            String baseURL = "http://192.168.1.78";
+            String baseURL = getResources().getString(R.string.baseURL);
             BasicHttpClient httpClient = new BasicHttpClient(baseURL);
             String nBaseurl = "/api/v1/post/";
             String auth = "Bearer " + accessToken;

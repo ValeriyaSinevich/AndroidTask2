@@ -17,6 +17,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.InetAddress;
@@ -29,6 +30,7 @@ import java.util.concurrent.ExecutionException;
 import com.example.valeriyasin.authorization.AuthorizationActivity;
 import com.example.valeriyasin.authorization.R;
 import com.fasterxml.jackson.databind.deser.std.NumberDeserializers;
+import com.fasterxml.jackson.databind.ser.Serializers;
 import com.turbomanage.httpclient.BasicHttpClient;
 import com.turbomanage.httpclient.HttpResponse;
 import com.turbomanage.httpclient.ParameterMap;
@@ -782,7 +784,11 @@ public class AuthorizationActivity extends AppCompatActivity implements Authoriz
 
     private WebView webView;
 
-    Boolean getTokenStarted = false;
+//    Boolean getTokenStarted = false;
+
+    AccessTokenGetter accessTokenGetter;
+
+    String baseUrl;
 
     Utils utils;
 
@@ -802,6 +808,10 @@ public class AuthorizationActivity extends AppCompatActivity implements Authoriz
         setContentView(R.layout.auth_acitivity);
         webView = (WebView) findViewById(R.id.web_auth_view);
 
+        AsyncTaskHandler.getInstance().turnOnAuthorizationActivityAlive(this);
+
+//        baseUrl = getResources().getString(R.id.bas)
+
         utils = new Utils(this);
 
         clientId = getIntent().getStringExtra(EXTRA_CLIENT_ID);
@@ -817,12 +827,24 @@ public class AuthorizationActivity extends AppCompatActivity implements Authoriz
             String url = String.format(authUrlTemplate, clientId, "&", redirectUrl, "&");
             URI uri = URI.create(url);
             System.out.println("URL: " + url);
-            webView.setWebViewClient(new OAuthWebClient(this));
+//            getTokenStarted = false;
+            webView.setWebViewClient(new OAuthWebClient(AsyncTaskHandler.getInstance()));
             webView.getSettings().setJavaScriptEnabled(true);
             webView.loadUrl(uri.toString());
         }
         else {
             webView.restoreState(savedInstanceState);
+            webView.setWebViewClient(new OAuthWebClient(AsyncTaskHandler.getInstance()));
+            webView.getSettings().setJavaScriptEnabled(true);
+//            getTokenStarted = savedInstanceState.getBoolean(GET_TOCKEN_STARTED);
+            AsyncTaskHandler.getInstance().turnOnAuthorizationActivityAlive(this);
+//            if (AsyncTaskHandler.getInstance().getAuthorizationActivityAlive().get()) {
+//
+//            }
+//            if (accessTokenGetter != null) {
+//                accessTokenGetter = (AccessTokenGetter)savedInstanceState.getSerializable("GET_TOKEN_ASUNC");
+//                accessTokenGetter.listener = this;
+//            }
         }
 
     }
@@ -844,7 +866,7 @@ public class AuthorizationActivity extends AppCompatActivity implements Authoriz
 
     @Override
     public void onAuthStarted() {
-        InternetConnectionChecker internetConnectionChecker = new InternetConnectionChecker(this);
+        InternetConnectionChecker internetConnectionChecker = new InternetConnectionChecker(AsyncTaskHandler.getInstance());
         try {
             Boolean connectionOk = internetConnectionChecker.execute("").get();
             if (!connectionOk) {
@@ -876,10 +898,10 @@ public class AuthorizationActivity extends AppCompatActivity implements Authoriz
     }
 
     private class OAuthWebClient extends WebViewClient {
-        private AuthorizationListener listener;
+        private AsyncTaskHandler asyncTaskHandler;
 
-        public OAuthWebClient(AuthorizationListener listener) {
-            this.listener = listener;
+        public OAuthWebClient(AsyncTaskHandler asyncTaskHandler) {
+            this.asyncTaskHandler = asyncTaskHandler;
         }
 
         @Override
@@ -888,13 +910,28 @@ public class AuthorizationActivity extends AppCompatActivity implements Authoriz
             System.out.println(url);
         }
 
+
+//        @Override
+//        public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+//            System.out.println("IM HERE");
+//            return super.shouldOverrideUrlLoading(view, request);
+//        }
+
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, String request) {
+            System.out.println("IM HERE2");
             String url = request.toString();
             if (url.startsWith(view.getResources().getString(R.string.callback_url))) {
                 String[] urls = url.split("=");
-                new AccessTokenGetter(listener).execute(urls[1]);
-                getTokenStarted = true;
+                if (!AsyncTaskHandler.getInstance().getAsyncTaskStarted().get()) {
+                    accessTokenGetter = new AccessTokenGetter(AsyncTaskHandler.getInstance());
+                    accessTokenGetter.execute(urls[1]);
+                }
+//                if (!getTokenStarted) {
+//                    accessTokenGetter = new AccessTokenGetter(listener);
+//                    accessTokenGetter.execute(urls[1]);
+//                }
+                AsyncTaskHandler.getInstance().turnOnAsyncTaskStarted();
                 return true;
             }
             return false;
@@ -902,15 +939,19 @@ public class AuthorizationActivity extends AppCompatActivity implements Authoriz
 
         @Override
         public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
-            listener.onError(error.toString());
+            asyncTaskHandler.onError(error.toString());
         }
     }
 
-    private class InternetConnectionChecker extends  AsyncTask<String, Void, Boolean> {
-        private AuthorizationListener listener;
+    class InternetConnectionChecker extends  AsyncTask<String, Void, Boolean> {
+        private AsyncTaskHandler asyncTaskHandler;
 
-        InternetConnectionChecker(AuthorizationListener listener) {
-            this.listener = listener;
+        public void setListener(AsyncTaskHandler asyncTaskHandler){
+            this.asyncTaskHandler = asyncTaskHandler;
+        }
+
+        InternetConnectionChecker(AsyncTaskHandler asyncTaskHandler) {
+            this.asyncTaskHandler = asyncTaskHandler;
         }
 
         public boolean isInternetAvailable() {
@@ -929,7 +970,7 @@ public class AuthorizationActivity extends AppCompatActivity implements Authoriz
         protected Boolean doInBackground(String... params) {
             boolean connectionOk = isInternetAvailable();
             if (!connectionOk) {
-                listener.onError(String.valueOf(utils.NO_INTERNET_CONNECTION));
+                asyncTaskHandler.onError(String.valueOf(utils.NO_INTERNET_CONNECTION));
             }
             return connectionOk;
         }
@@ -946,11 +987,12 @@ public class AuthorizationActivity extends AppCompatActivity implements Authoriz
     }
 
 
-    private class AccessTokenGetter extends AsyncTask<String, Void, TokenObject> {
-        private AuthorizationListener listener;
+    private class AccessTokenGetter extends AsyncTask<String, Void, TokenObject>
+            implements Serializable {
+        private AsyncTaskHandler asyncTaskHandler;
 
-        AccessTokenGetter(AuthorizationListener listener) {
-            this.listener = listener;
+        AccessTokenGetter(AsyncTaskHandler asyncTaskHandler) {
+            this.asyncTaskHandler = asyncTaskHandler;
         }
 
         @Override
@@ -960,7 +1002,7 @@ public class AuthorizationActivity extends AppCompatActivity implements Authoriz
                 System.out.println(params[0]);
                 System.out.println("------------------------");
                 System.out.println(redirectUrl);
-                String baseURL = "http://192.168.1.78";
+                String baseURL = getResources().getString(R.string.baseURL);
                 BasicHttpClient httpClient = new BasicHttpClient(baseURL);
                 String nBaseurl = "/o/token/";
                 String appCredentials = clientId + ":" + clientSecret;
@@ -1007,9 +1049,9 @@ public class AuthorizationActivity extends AppCompatActivity implements Authoriz
         protected void onPostExecute(TokenObject tokenObject) {
             if (tokenObject != null) {
                 if (tokenObject.getToken().contains("Error")) {
-                    listener.onError(tokenObject.getToken());
+                    asyncTaskHandler.onError(tokenObject.getToken());
                 } else {
-                    listener.onComplete(tokenObject);
+                    asyncTaskHandler.onComplete(tokenObject);
                 }
             }
 
@@ -1020,13 +1062,14 @@ public class AuthorizationActivity extends AppCompatActivity implements Authoriz
     private String getAccessTokenDateExpiration(String expires_in) {
         int secs = Integer.parseInt(expires_in);
         Date date = new Date();
-//        date.setTime(date.getTime() + secs * 1000);
+        date.setTime(date.getTime() + secs * 1000);
         return date.toString();
     }
 
     @Override
     protected void onSaveInstanceState(Bundle savedInstanceState) {
-        savedInstanceState.putBoolean(GET_TOCKEN_STARTED, getTokenStarted);
+//        savedInstanceState.putBoolean(GET_TOCKEN_STARTED, getTokenStarted);
+        savedInstanceState.putSerializable("GET_TOKEN_ASYNC", accessTokenGetter);
         webView.saveState(savedInstanceState);
 //        savedInstanceState.putInt(AUTHORIZED_ACTIVITY_STARTED, authorizedActivityStarted);
 

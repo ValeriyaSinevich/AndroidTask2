@@ -9,9 +9,11 @@
     <string name="password_hint">password</string>
     <string name="login_button">login</string>
 
-    <string name="auth_url">http://192.168.1.78/o/authorize/?client_id=%1$s%2$sredirect_url=%3$s%4$scope=read&amp;response_type=code</string>
-    <string name="token_url">http://192.168.1.78/o/token/</string>
-    <string name="baseURL">http://192.168.1.78</string>;
+    <string name="auth_url">http://93.175.2.52:8080/o/authorize/?client_id=%1$s%2$sredirect_url=%3$s%4$scope=read&amp;response_type=code</string>
+    <string name="token_url">http://93.175.2.52:8080/o/token/</string>
+    <string name="baseURL">http://93.175.2.52:8080</string>;
+
+    <!--192.168.88.106-->
 
     <string name="SAVED_TOKEN">saved_token</string>;
     <string name="SAVED_EXPIRATION_DATE">saved_date</string>;

@@ -110,8 +110,8 @@ public class MainActivity extends AppCompatActivity {
         utils = new Utils(this);
         String tag = "login_fragment";
 
-//        String accessToken = getToken();
-        String accessToken = "default_token";
+        String accessToken = getToken();
+//        String accessToken = "default_token";
         if (!accessToken.equals(utils.DEFAULT_TOKEN)) {
             SimpleDateFormat format = new SimpleDateFormat("EEE MMM dd HH:mm:ss z yyyy");
             Date now = new Date();
